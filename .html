@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+   <title>三点定位 By：许执喵</title>//这里面的中文都可以更改
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+   <title>三点定位 By：许执喵</title>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html{width: 100%;height: 100%;margin:0;font-family:"微软雅黑";font-size:14px;}
+		#l-map{height:800px;width:100%;}
+		#r-result{width:100%;}
+     #container{height:100%}  
+	</style>
+	<script type="text/javascript" src="//api.map.baidu.com/api?v=2.0&ak=PqfXELTD4OAeRxGIi35ag1bO2TNW9Kzu"></script> //回到正题，现在去申请个ak值 
+	
+</head>
+<body>
+	<div id="l-map"></div>
+	<div id="r-result">地址搜索:<input type="text" id="suggestId" size="20" value="百度" style="width:150px;" /></div>
+	<div id="searchResultPanel" style="border:1px solid #C0C0C0;width:150px;height:auto; display:none;"></div>
+                <div id="container"></div>
+
+    <h1> 使用说明 <h1/>
+   
+    <h2>  <h2/> 
+     
+     <p>1.左键单击，可标点，可标定半径距离。<p/>
+     <p>2.左键长按已标点 可移动标点的位置。<p/>
+     <p>3.右键单击已标点 可删除标点的位置。<p/>
+     <p>4.左下角的搜索框可搜索具体的位置。<p/> 
+     <p>5.右上角可切换地图模式为卫星地图。<p/> 
+     <br>  
+     <h1> 具体案例（点击链接可跳转） <h1/>
+     <h2>  <h2/>   
+
+      <a href="https://baike.baidu.com/item/%E5%BE%AE%E4%BF%A1%E4%B8%89%E7%82%B9%E5%AE%9A%E4%BD%8D/2637116?fr=aladdin" target="view_frame">1.三点定位百度百科介绍</a><br><br>
+      <a href="http://www.xitongcheng.cc/xtjc/17616.html" target="view_frame">2.三点定位模拟实战场景</a><br><br>
+      <a href="http://www.360doc.com/content/15/0313/00/21741158_454703890.shtml" target="view_frame">3.三点定位其他问题须知</a><br><br>
+     
+
+
+</body>
+</html>
+
+
+     
+     
+<script> 
+  
+     
+	// 百度地图API功能
+	function G(id) {
+		return document.getElementById(id);
+	}
+  
+	var map = new BMap.Map("l-map");
+	map.centerAndZoom("北京",12);                   // 初始化地图,设置城市和地图级别。    
+   map.enableScrollWheelZoom(true);
+   map.addControl(new BMap.NavigationControl());    
+   map.addControl(new BMap.ScaleControl());    
+   map.addControl(new BMap.OverviewMapControl());
+   map.setCurrentCity("北京"); // 仅当设置城市信息时，MapTypeControl的切换功能才能可用 
+   map.addControl(new BMap.MapTypeControl({
+            mapTypes: [
+               BMAP_NORMAL_MAP,
+               BMAP_HYBRID_MAP
+             ]
+          
+            }));
+   map.enableScrollWheelZoom(true);            // 开启鼠标滚轮缩放
+     
+	var ac = new BMap.Autocomplete(    //建立一个自动完成的对象
+		{"input" : "suggestId"
+		,"location" : map
+	});
+  
+	ac.addEventListener("onhighlight", function(e) {  //鼠标放在下拉列表上的事件
+	var str = "";
+		var _value = e.fromitem.value;
+		var value = "";
+		if (e.fromitem.index > -1) {
+			value = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+		}    
+		str = "FromItem<br />index = " + e.fromitem.index + "<br />value = " + value;
+		
+		value = "";
+		if (e.toitem.index > -1) {
+			_value = e.toitem.value;
+			value = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+		}    
+		str += "<br />ToItem<br />index = " + e.toitem.index + "<br />value = " + value;
+		G("searchResultPanel").innerHTML = str;
+	});
+
+  
+	var myValue;
+	ac.addEventListener("onconfirm", function(e) {    //鼠标点击下拉列表后的事件
+	var _value = e.item.value;
+		myValue = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+		G("searchResultPanel").innerHTML ="onconfirm<br />index = " + e.item.index + "<br />myValue = " + myValue;
+		
+		setPlace();
+	});         
+
+            map.addEventListener("click", function(e) {   
+            var ds = window.prompt("模糊距离:(单位:M)", "");
+            var pt = e.point;
+            
+  
+            var marker = new BMap.Marker(pt);
+            map.addOverlay(marker);
+            marker.enableDragging();
+
+            //给图标添加右键监听，删除该位置及范围
+            marker.addEventListener("rightclick", function(e) {
+                map.removeOverlay(marker); 
+                map.removeOverlay(circle);
+             });
+
+            //地图范围圆形覆盖物
+            var circle = new BMap.Circle(pt, ds);
+            circle.setStrokeWeight(2);
+            circle.setFillOpacity(0.35);
+            map.addOverlay(circle);
+              
+            //给图标添加拖拽监听
+            marker.addEventListener("dragging", function(e) {
+                circle.setCenter(e.point);
+            });
+    });
+  
+  
+	function setPlace(){
+	
+		function myFun(){
+			var pp = local.getResults().getPoi(0).point;    //获取第一个智能搜索的结果
+			map.centerAndZoom(pp, 18);
+			map.addOverlay(new BMap.Marker(pp));    //添加标注
+		}
+		var local = new BMap.LocalSearch(map, { //智能搜索
+		  onSearchComplete: myFun
+		});
+		local.search(myValue);
+	}
+  
+  
+ 
+
+</script>
